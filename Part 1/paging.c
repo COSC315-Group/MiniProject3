@@ -22,8 +22,8 @@ int main (int argc, char *argv[]){
     // attempt to read the next line and store 
     // the value in the "input" variable 
     int count = 1;
-    int n;
-    int m;
+    int n;  // The n lowest significant bits that represent the offset
+    int m;  // The next m bits that represent the page number, assume n+m id always 16
 
     while(fscanf(file, "%d", & input ) == 1){
         if(count = 1){
@@ -32,11 +32,44 @@ int main (int argc, char *argv[]){
             m = input;
         }else{
             // Each line going forward is a virtual address
-            unsigned int v = input;  // Virutal Address
-            
+            unsigned int v = input;  // Virutal Address(')
+            int p = pageNumberCalculation(); //page number
+            int d = offsetCalculation(v, n); //Offset
+            print("virtual addressed v"+count+" is in page number "+p+" and offsetd"+d);
 
         }
         count++;
     }
+    // Close I/O file stream
     fclose(inputFile);
 }
+
+// Page number calculation
+// v DIV 2^n
+// DIV == bitwise >>
+int pageNumberCalculation(v, n){
+    int p = v >> 2^n
+    return p;
+}
+
+// Offset Calculation
+// v MOD 2^n 
+// MOD == bitwise AND
+int offsetCalculation(v, n){
+    int d = v & 2^n;
+    return d;
+}
+
+//Testing methods
+int testPageNumberCalculation(v, n){
+    int p = v/2^n;
+    return p;
+}
+
+int testOffsetCalculation(v, n){
+    int d = v%2*n;
+    return d;
+}
+
+// Understanding bitwise operations
+// https://mziccard.me/2015/05/08/modulo-and-division-vs-bitwise-operations/
