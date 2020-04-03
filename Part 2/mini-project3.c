@@ -5,7 +5,11 @@
 void myFileSystem(const char* diskName)
 {
    // Open the file with name diskName
-   
+   FILE *input = fopen(diskName,"r");
+   if(input == NULL){
+     printf("Could not find disk '%s'. Please try again\n",diskName);
+     exit(-1);
+   }
    // Read the first 1KB and parse it to structs/objecs representing the super block
    // 	An easy way to work with the 1KB memory chunk is to move a pointer to a
    //	position where a struct/object begins. You can use the sizeof operator to help
@@ -68,7 +72,7 @@ int ls(void)
 
 } // End ls
 
-int read(char name[8], int blockNum, char buf[1024])
+int readBlock(char name[8], int blockNum, char buf[1024])
 {
 
    // read this block from this file
@@ -83,7 +87,7 @@ int read(char name[8], int blockNum, char buf[1024])
 } // End read
 
 
-int write(char name[8], int blockNum, char buf[1024])
+int writeBlock(char name[8], int blockNum, char buf[1024])
 {
 
    // write this block to this file
@@ -96,5 +100,9 @@ int write(char name[8], int blockNum, char buf[1024])
 } // end write
 
 int main(int argc, char *argv[]){
+  const char diskName;
+  printf("Enter name of disk to load: ");
+  scanf("%s",&diskName);
+  myFileSystem(&diskName);
 	return 0;
 }
