@@ -16,11 +16,12 @@ struct superBlock{
 };
 
 struct superBlock super;
+FILE *input;
 
 void myFileSystem(const char* diskName)
 {
    // Open the file with name diskName
-   FILE *input = fopen(diskName,"rb");
+   input = fopen(diskName,"r+");
    if(input == NULL){
      printf("Could not find disk '%s'. Please try again\n",diskName);
      exit(-1);
@@ -45,7 +46,6 @@ void myFileSystem(const char* diskName)
    }
    // Be sure to close the file in a destructor or otherwise before
    // the process exits.
-   fclose(input);
 }
 
 
@@ -64,20 +64,47 @@ int create(char name[8], int size)
       inodeIndex = i;
     }
     if(strcmp(name,super.inodes[i].name)==0){
-      printf("Filename '%s' already in use. Please use a different name or delete the offending file.",name);
+      printf("Filename '%s' already in use. Please use a different name or delete the offending file.\n",name);
+      return -1;
     }
   }
 
   // Step 2: Look for a number of free blocks equal to the size variable
   // passed to this method. If not enough free blocks exist, then return an error.
+  if(size>8){
+    printf("The requested space for this file exceed's the system's maximum of eight 1KB blocks");
+    return -1;
+  }
+
+  int blockIndices[size];
+  int foundIndices = 0;
+  for(int i = 1; i<128 && foundIndices<size; i++){
+    if(super.freeBlocks[i]==0){
+      blockIndices[foundIndices] = i;
+      foundIndices++;
+    }
+  }
+  if(foundIndices<size){
+    printf("There is not enough room on the system for this file.\n");
+    return -1;
+  }
 
   // Step 3: Now we know we have an inode and free blocks necessary to
   // create the file. So mark the inode and blocks as used and update the rest of
   // the information in the inode.
+  strcpy(super.inodes[inodeIndex].name,name);
+  super.inodes[inodeIndex].size = size;
+  super.inodes[inodeIndex].used = 1;
+  for(int i = 0; i<size; i++){
+    super.freeBlocks[blockIndices[i]] = 1;
+    super.inodes[inodeIndex].blockPointers[i] = blockIndices[i]*1024; //Holds the first byte number of this block
+  }
 
   // Step 4: Write the entire super block back to disk.
   //	An easy way to do this is to seek to the beginning of the disk
   //	and write the 1KB memory chunk.
+  fseek(input,0,SEEK_SET);
+  fwrite(&super,sizeof(struct superBlock),1,input);
 } // End Create
 
 
@@ -108,7 +135,7 @@ int ls(void)
   // Step 1: Print the name and size fields of all used inodes.
   int8_t fileExists = 0;
   for(int i = 0; i<16; i++){
-    if(super.inodes[i].used==1){super.freeBlocks = &freeBlocks;
+    if(super.inodes[i].used==1){
       // inode in use, print info
       printf("Name: %s\tSize: %d\n",super.inodes[i].name,super.inodes[i].size);
       fileExists = 1;
@@ -154,5 +181,8 @@ int main(int argc, char *argv[]){
   scanf("%s",&diskName);
   myFileSystem(&diskName);
   ls();
+  create("file1",3);
+  ls();
+  fclose(input);
 	return 0;
 }
