@@ -1,12 +1,13 @@
 // Part 1: Memory managment - paging
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 // Page number calculation
 // v DIV 2^n
 // DIV == bitwise >>
 unsigned int pageNumberCalculation(v, n){
-    unsigned int p = v >> 2^n;
+    unsigned int p = v >> n;
     return p;
 }
 
@@ -14,19 +15,25 @@ unsigned int pageNumberCalculation(v, n){
 // v MOD 2^n 
 // MOD == bitwise AND
 unsigned int offsetCalculation(v, n){
-    unsigned int d = v & 2^n;
+    unsigned int d = v & (int)pow(2, n)-1;
     return d;
 }
 
 //Testing methods
 unsigned int testPageNumberCalculation(v, n){
-    unsigned int p = v/2^n;
+    unsigned int p = v/pow(2, n);
     return p;
 }
 
 unsigned int testOffsetCalculation(v, n){
-    unsigned int d = v%2*n;
+    unsigned int d = v%(int)pow(2, n);
     return d;
+}
+void runTesting(v, n, count){
+    unsigned int p = testPageNumberCalculation(v, n); //page number
+    unsigned int d = testOffsetCalculation(v, n); //Offset
+    printf("Testing result virtual address v%d is in page number %d offset %d \n", count-2, p, d);
+
 }
 
 // Understanding bitwise operations
@@ -56,19 +63,23 @@ int main (int argc, char *argv[]){
     unsigned int input;
 
     while(fscanf(inputFile, "%d", & input ) == 1){
-        if(count = 1){
+        if(count == 1){
             n = input;
-        }else if(count = 2){
+            printf("The N value %d\n", n);
+        }else if(count == 2){
             m = input;
+            printf("The M value: %d \n", m);
         }else{
             // Each line going forward is a virtual address
             unsigned int v = input;  // Virutal Address(')
             unsigned int p = pageNumberCalculation(v, n); //page number
             unsigned int d = offsetCalculation(v, n); //Offset
-            printf("virtual addressed v %d is in page number %d offset %d", count, p, d);
+            printf("virtual address v%d is in page number %d offset %d \n", count-2, p, d);
 
+            //Testing commented out for code we handed in
+            //runTesting(v, n, count);
         }
-        count++;
+        count = count + 1;
     }
     // Close I/O file stream
     fclose(inputFile);
