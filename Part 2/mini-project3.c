@@ -6,7 +6,7 @@
 struct indexNode{
   char name[8]; //file name
   int size;     // file size (in number of blocks)
-  int blockPointers[8]; // direct block pointers
+  int blockPointers[8]; // block numbers; this*1024 is first byte in file
   int used;     // 0 => inode is free; 1 => in use
 };
 
@@ -97,7 +97,7 @@ int create(char name[8], int size)
   super.inodes[inodeIndex].used = 1;
   for(int i = 0; i<size; i++){
     super.freeBlocks[blockIndices[i]] = 1;
-    super.inodes[inodeIndex].blockPointers[i] = blockIndices[i]*1024; //Holds the first byte number of this block
+    super.inodes[inodeIndex].blockPointers[i] = blockIndices[i]; //Holds the block number of this block
   }
 
   // Step 4: Write the entire super block back to disk.
@@ -117,13 +117,32 @@ int delete(char name[8])
   // by searching the collection of objects
   // representing inodes within the super block object.
   // If it does not exist, then return an error.
+  int inodeIndex = -1;
+  for(int i = 0; i<16; i++){
+    if(strcmp(name,super.inodes[i].name)==0){
+      inodeIndex = i;
+      break;
+    }
+  }
+  if(inodeIndex==-1){
+    printf("No file with name '%s' exists on the system.",name);
+    return -1;
+  }
 
   // Step 2: Free blocks of the file being deleted by updating
   // the object representing the free block list in the super block object.
+  for(int i = 0; i<super.inodes[inodeIndex].size; i++){
+    super.freeBlocks[super.inodes[inodeIndex].blockPointers[i]] = 0;
+  }
 
   // Step 3: Mark inode as free.
+  super.inodes[inodeIndex].used = 0;
+  //Free up name
+  super.inodes[inodeIndex].name[0] = "\0";
 
   // Step 4: Write the entire super block back to disk.
+  fseek(input,0,SEEK_SET);
+  fwrite(&super,sizeof(struct superBlock),1,input);
 
 } // End Delete
 
@@ -180,8 +199,9 @@ int main(int argc, char *argv[]){
   printf("Enter name of disk to load: ");
   scanf("%s",&diskName);
   myFileSystem(&diskName);
-  ls();
   create("file1",3);
+  ls();
+  delete("file1");
   ls();
   fclose(input);
 	return 0;
