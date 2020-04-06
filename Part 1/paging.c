@@ -70,9 +70,10 @@ int main (int argc, char *argv[]){
             unsigned int d = offsetCalculation(v, n); //Offset
             printf("virtual address v%d is in page number %d offset %d \n", count-2, p, d);
 
-            unsigned int p2 = testPageNumberCalculation(v, n); //page number
-            unsigned int d2 = testOffsetCalculation(v, n); //Offset
-            printf("Testing result virtual address v%d is in page number %d offset %d \n", count-2, p2, d2);
+            //Testing lines remove comments for testing
+            //unsigned int p2 = testPageNumberCalculation(v, n); //page number
+            //unsigned int d2 = testOffsetCalculation(v, n); //Offset
+            //printf("Testing result virtual address v%d is in page number %d offset %d \n", count-2, p2, d2);
 
         }
         count = count + 1;
