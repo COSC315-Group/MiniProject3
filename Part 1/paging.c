@@ -29,6 +29,12 @@ unsigned int testOffsetCalculation(v, n){
     unsigned int d = v%(int)pow(2, n);
     return d;
 }
+void runTesting(v, n, count){
+    unsigned int p = testPageNumberCalculation(v, n); //page number
+    unsigned int d = testOffsetCalculation(v, n); //Offset
+    printf("Testing result virtual address v%d is in page number %d offset %d \n", count-2, p, d);
+
+}
 
 // Understanding bitwise operations
 // https://mziccard.me/2015/05/08/modulo-and-division-vs-bitwise-operations/
@@ -70,11 +76,8 @@ int main (int argc, char *argv[]){
             unsigned int d = offsetCalculation(v, n); //Offset
             printf("virtual address v%d is in page number %d offset %d \n", count-2, p, d);
 
-            //Testing lines remove comments for testing
-            //unsigned int p2 = testPageNumberCalculation(v, n); //page number
-            //unsigned int d2 = testOffsetCalculation(v, n); //Offset
-            //printf("Testing result virtual address v%d is in page number %d offset %d \n", count-2, p2, d2);
-
+            //Testing commented out for code we handed in
+            //runTesting(v, n, count);
         }
         count = count + 1;
     }
