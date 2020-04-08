@@ -15,6 +15,10 @@ struct superBlock{
   struct indexNode inodes[16];
 };
 
+struct buffer{
+  char content[1024];
+};
+
 struct superBlock super;
 FILE *input;
 
@@ -33,7 +37,6 @@ void myFileSystem(const char* diskName)
    //	struct/object type.
    int8_t freeBlocks[128];
    fread(freeBlocks, sizeof(int8_t), 128, input);
-   printf("Free block addresses loaded. Current file point: %d\n",ftell(input));
 
    struct indexNode inodes[16];
    fread(inodes, sizeof(struct indexNode), 16, input);
@@ -105,6 +108,13 @@ int create(char name[8], int size)
   //	and write the 1KB memory chunk.
   fseek(input,0,SEEK_SET);
   fwrite(&super,sizeof(struct superBlock),1,input);
+
+  // Output creation info
+  printf("Created file %s (size %d) allocated to blocks ",name, size);
+  for(int i = 0; i<size; i++){
+    printf("%d ",blockIndices[i]);
+  }
+  printf("\n");
 } // End Create
 
 
@@ -144,6 +154,12 @@ int delete(char name[8])
   fseek(input,0,SEEK_SET);
   fwrite(&super,sizeof(struct superBlock),1,input);
 
+  // Print delete info
+  printf("Deleted file %s (size %d) and freed blocks ",name,super.inodes[inodeIndex].size);
+  for(int i = 0; i<super.inodes[inodeIndex].size; i++){
+    printf("%d ",super.inodes[inodeIndex].blockPointers[i]);
+  }
+  printf("\n");
 } // End Delete
 
 
@@ -174,10 +190,35 @@ int readBlock(char name[8], int blockNum, char buf[1024])
    // blockNum does not exceed size-1.
 
    // Step 1: Locate the inode for this file as in Step 1 of delete.
+  int inodeIndex = -1;
+  for(int i = 0; i<16; i++){
+    if(strcmp(name,super.inodes[i].name)==0){
+      inodeIndex = i;
+      break;
+    }
+  }
+  if(inodeIndex==-1){
+    printf("No file with name '%s' exists on the system.",name);
+    return -1;
+  }
+
+  //Checking if blocknum is valid
+  if(blockNum >= super.inodes[inodeIndex].size){
+    printf("The requested block %d is out of %s's size range %d. Note that block numbers index from 0",blockNum,name,super.inodes[inodeIndex].size);
+    return -1;
+  }
 
    // Step 2: Seek to blockPointers[blockNum] and read the block
    // from disk to buf.
+  struct buffer b;
+  fseek(input,super.inodes[inodeIndex].blockPointers[blockNum]*1024,SEEK_SET); // We multiply by 1024 to convert block number to byte number, since each block is 1KB = 1024B
+  fread(&b,1024,1,input);
+  for(int i = 0; i<1024; i++){
+    buf[i] = b.content[i];
+  }
 
+  // Print read info
+  printf("Read %s block %d (disk address %d) into buffer. Output: %s\n",name,blockNum,super.inodes[inodeIndex].blockPointers[blockNum],buf);
 } // End read
 
 
@@ -188,9 +229,34 @@ int writeBlock(char name[8], int blockNum, char buf[1024])
    // Return an error if and when appropriate.
 
    // Step 1: Locate the inode for this file as in Step 1 of delete.
+  int inodeIndex = -1;
+  for(int i = 0; i<16; i++){
+    if(strcmp(name,super.inodes[i].name)==0){
+      inodeIndex = i;
+      break;
+    }
+  }
+  if(inodeIndex==-1){
+    printf("No file with name '%s' exists on the system.",name);
+    return -1;
+  }
 
+  //Checking if blocknum is valid
+  if(blockNum >= super.inodes[inodeIndex].size){
+    printf("The requested block %d is out of %s's size range %d. Note that block numbers index from 0",blockNum,name,super.inodes[inodeIndex].size);
+    return -1;
+  }
+  
    // Step 2: Seek to blockPointers[blockNum] and write buf to disk.
-   
+  struct buffer b;
+  for(int i = 0; i<1024; i++){
+    b.content[i] = buf[i];
+  }
+  fseek(input,super.inodes[inodeIndex].blockPointers[blockNum]*1024,SEEK_SET); // We multiply by 1024 to convert block number to byte number, since each block is 1KB = 1024B
+  fwrite(&b,1024,1,input);
+
+  // Print write info
+  printf("Wrote to %s block %d (disk address %d)\n",name,blockNum,super.inodes[inodeIndex].blockPointers[blockNum]);
 } // end write
 
 int main(int argc, char *argv[]){
@@ -201,6 +267,10 @@ int main(int argc, char *argv[]){
   myFileSystem(&diskName);
   create("file1",3);
   ls();
+  writeBlock("file1",1,"Hello World!");
+  char out[1024];
+  readBlock("file1",1,out);
+  readBlock("file1",0,out);
   delete("file1");
   ls();
   fclose(input);
