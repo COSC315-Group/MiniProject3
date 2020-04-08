@@ -75,7 +75,7 @@ int create(char name[8], int size)
   // Step 2: Look for a number of free blocks equal to the size variable
   // passed to this method. If not enough free blocks exist, then return an error.
   if(size>8){
-    printf("The requested space for this file exceed's the system's maximum of eight 1KB blocks");
+    printf("The requested space for this file exceed's the system's maximum of eight 1KB blocks\n");
     return -1;
   }
 
@@ -135,7 +135,7 @@ int delete(char name[8])
     }
   }
   if(inodeIndex==-1){
-    printf("No file with name '%s' exists on the system.",name);
+    printf("No file with name '%s' exists on the system.\n",name);
     return -1;
   }
 
@@ -198,13 +198,13 @@ int readBlock(char name[8], int blockNum, char buf[1024])
     }
   }
   if(inodeIndex==-1){
-    printf("No file with name '%s' exists on the system.",name);
+    printf("No file with name '%s' exists on the system.\n",name);
     return -1;
   }
 
   //Checking if blocknum is valid
   if(blockNum >= super.inodes[inodeIndex].size){
-    printf("The requested block %d is out of %s's size range %d. Note that block numbers index from 0",blockNum,name,super.inodes[inodeIndex].size);
+    printf("The requested block %d is out of %s's size range %d. Note that block numbers index from 0\n",blockNum,name,super.inodes[inodeIndex].size);
     return -1;
   }
 
@@ -218,8 +218,9 @@ int readBlock(char name[8], int blockNum, char buf[1024])
   }
 
   // Print read info
-  printf("Read %s block %d (disk address %d) into buffer. Output: %s\n",name,blockNum,super.inodes[inodeIndex].blockPointers[blockNum],buf);
+  printf("Read %s block %d (disk address %d) into buffer.\n",name,blockNum,super.inodes[inodeIndex].blockPointers[blockNum]);
 } // End read
+
 
 
 int writeBlock(char name[8], int blockNum, char buf[1024])
@@ -237,13 +238,13 @@ int writeBlock(char name[8], int blockNum, char buf[1024])
     }
   }
   if(inodeIndex==-1){
-    printf("No file with name '%s' exists on the system.",name);
+    printf("No file with name '%s' exists on the system.\n",name);
     return -1;
   }
 
   //Checking if blocknum is valid
   if(blockNum >= super.inodes[inodeIndex].size){
-    printf("The requested block %d is out of %s's size range %d. Note that block numbers index from 0",blockNum,name,super.inodes[inodeIndex].size);
+    printf("The requested block %d is out of %s's size range %d. Note that block numbers index from 0\n",blockNum,name,super.inodes[inodeIndex].size);
     return -1;
   }
   
@@ -259,20 +260,101 @@ int writeBlock(char name[8], int blockNum, char buf[1024])
   printf("Wrote to %s block %d (disk address %d)\n",name,blockNum,super.inodes[inodeIndex].blockPointers[blockNum]);
 } // end write
 
+
+
 int main(int argc, char *argv[]){
-  //TODO read the commands from a file
-  const char diskName;
-  printf("Enter name of disk to load: ");
-  scanf("%s",&diskName);
-  myFileSystem(&diskName);
-  create("file1",3);
-  ls();
-  writeBlock("file1",1,"Hello World!");
-  char out[1024];
-  readBlock("file1",1,out);
-  readBlock("file1",0,out);
-  delete("file1");
-  ls();
+  //This is the dummy buffer to write to files
+  char writeBuf[1024] = "This file has been written to";
+
+  //Opening the instruction file
+  const char instFileName;
+  printf("Enter name of instruction file: ");
+  scanf("%s",&instFileName);
+  FILE *instFile = fopen(&instFileName,"r");
+  if (instFile == NULL ){  
+        printf("Error the instruction file specified does not exist\n"); 
+        exit(-1); 
+  } 
+
+  //Read first line to open disk
+  char line[100]; //assuming no valid line will go over 100 characters
+  fgets(line,100,instFile);
+  char diskName[strcspn(line,"\n")-1];
+  for(int i = 0; i<strcspn(line,"\n")-1; i++){
+    diskName[i] = line[i];
+  }
+  myFileSystem(diskName);
+
+  //Iterate through instructions and execute them
+  while(fgets(line,100,instFile)!=NULL){
+    //Cut line down to remove \n character
+    char parsedLine[strcspn(line,"\n")+1];
+    for(int i = 0; i<strcspn(line,"\n")-1; i++){
+      parsedLine[i] = line[i];
+    }
+    //Delete seems to not work with a variable size string as the final arg in the line. This is a bandaid fix
+    parsedLine[strcspn(line,"\n")-1] = " ";
+    parsedLine[strcspn(line,"\n")] = "X"; //indicates end of instruction
+
+    //Find base instruction
+    char *instruction = strtok(parsedLine," ");
+    switch (instruction[0]){
+    case 'C':
+      //Create
+      instruction = strtok(NULL," ");
+      char createname[8]; 
+      for(int i = 0; i<8; i++){
+        createname[i] = instruction[i];
+      }
+      instruction = strtok(NULL," ");
+      int size = instruction[0] - '0';
+      create(createname,size);
+      break;
+    case 'D':
+      //Delete
+      instruction = strtok(NULL," ");
+      char deletename[8]; 
+      for(int i = 0; i<8; i++){
+        deletename[i] = instruction[i];
+      }
+      printf("Line: %s Instruction: %s", parsedLine,instruction);
+      delete(deletename);
+      break;
+    case 'L':
+      //ls
+      ls();
+      break;
+    case 'R': ;
+      //Read
+      char readbuf[1024];
+      instruction = strtok(NULL," ");
+      char readname[8]; 
+      for(int i = 0; i<8; i++){
+        readname[i] = instruction[i];
+      }
+      instruction = strtok(NULL," ");
+      int readblocknum = instruction[0] - '0';
+      readBlock(readname,readblocknum,readbuf);
+      printf("%s\n",readbuf);
+      break;
+    case 'W':
+      //Write
+      instruction = strtok(NULL," ");
+      char writename[8]; 
+      for(int i = 0; i<8; i++){
+        writename[i] = instruction[i];
+      }
+      instruction = strtok(NULL," ");
+      int writeblocknum = instruction[0] - '0';
+      writeBlock(writename,writeblocknum,writeBlock);
+      break;
+    default:
+      printf("Unrecognized command '%s'\n",instruction);
+      break;
+    }
+  }
+
   fclose(input);
+  fclose(instFile);
 	return 0;
 }
