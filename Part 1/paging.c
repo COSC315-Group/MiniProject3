@@ -41,7 +41,7 @@ void runTesting(v, n, count){
 
 
 int main (int argc, char *argv[]){
-    char inputFileName[15];
+    char inputFileName[1000];
 
     //Grabbing file name
     printf("Input file name: ");
