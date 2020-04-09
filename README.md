@@ -132,7 +132,7 @@ The code has already been compiled with gcc and can be found within the folder s
 ## Sample output
 
 ### Part I: Memory Management
-![P1 output](/Images/P1MemoryManagmentOutput.png)
+![P1 output](/Images/P1MemoryManagementOutput.png)
 
 ### Part II: File System
 ![P2 output](/Images/P2FileSystemOutput.png)
