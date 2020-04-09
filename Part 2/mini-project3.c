@@ -110,7 +110,7 @@ int create(char name[8], int size)
   fwrite(&super,sizeof(struct superBlock),1,input);
 
   // Output creation info
-  printf("Created file %s (size %d) allocated to blocks ",name, size);
+  printf("Created file %s (size %d) allocated to blocks ",super.inodes[inodeIndex].name, size);
   for(int i = 0; i<size; i++){
     printf("%d ",blockIndices[i]);
   }
@@ -129,7 +129,7 @@ int delete(char name[8])
   // If it does not exist, then return an error.
   int inodeIndex = -1;
   for(int i = 0; i<16; i++){
-    if(strcmp(name,super.inodes[i].name)==0){
+    if(strncmp(name,super.inodes[i].name,8)==0){
       inodeIndex = i;
       break;
     }
@@ -232,7 +232,7 @@ int writeBlock(char name[8], int blockNum, char buf[1024])
    // Step 1: Locate the inode for this file as in Step 1 of delete.
   int inodeIndex = -1;
   for(int i = 0; i<16; i++){
-    if(strcmp(name,super.inodes[i].name)==0){
+    if(strncmp(name,super.inodes[i].name,8)==0){
       inodeIndex = i;
       break;
     }
@@ -264,7 +264,7 @@ int writeBlock(char name[8], int blockNum, char buf[1024])
 
 int main(int argc, char *argv[]){
   //This is the dummy buffer to write to files
-  char writeBuf[1024] = "This file has been written to";
+  char *writeBuf = "This file has been written to";
 
   //Opening the instruction file
   const char instFileName;
@@ -293,8 +293,8 @@ int main(int argc, char *argv[]){
       parsedLine[i] = line[i];
     }
     //Delete seems to not work with a variable size string as the final arg in the line. This is a bandaid fix
-    parsedLine[strcspn(line,"\n")-1] = " ";
-    parsedLine[strcspn(line,"\n")] = "X"; //indicates end of instruction
+    parsedLine[strcspn(line,"\n")-1] = ' ';
+    parsedLine[strcspn(line,"\n")] = 'X'; //indicates end of instruction
 
     //Find base instruction
     char *instruction = strtok(parsedLine," ");
@@ -313,12 +313,7 @@ int main(int argc, char *argv[]){
     case 'D':
       //Delete
       instruction = strtok(NULL," ");
-      char deletename[8]; 
-      for(int i = 0; i<8; i++){
-        deletename[i] = instruction[i];
-      }
-      printf("Line: %s Instruction: %s", parsedLine,instruction);
-      delete(deletename);
+      delete(instruction);
       break;
     case 'L':
       //ls
@@ -346,7 +341,7 @@ int main(int argc, char *argv[]){
       }
       instruction = strtok(NULL," ");
       int writeblocknum = instruction[0] - '0';
-      writeBlock(writename,writeblocknum,writeBlock);
+      writeBlock(writename,writeblocknum,writeBuf);
       break;
     default:
       printf("Unrecognized command '%s'\n",instruction);
